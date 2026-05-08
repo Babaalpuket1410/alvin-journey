@@ -10,7 +10,7 @@ export default function SleepPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [logId, setLogId] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
-  const [log, setLog] = useState<{ bedtime: string; wake_time: string; duration_hrs: number | null; quality: number | null; notes: string } | null>(null)
+  const [log, setLog] = useState<{ bedtime: string | null; wake_time: string | null; duration_hrs: number | null; quality: number | null; notes: string | null } | null>(null)
   const [history, setHistory] = useState<any[]>([])
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
