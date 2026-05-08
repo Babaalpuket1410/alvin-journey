@@ -78,9 +78,9 @@ export default function MealsPage() {
     const file = e.target.files[0]
     setUploading(activePhotoMeal)
     const ext = file.name.split('.').pop()
-    const path = `${userId}/${today}/${activePhotoMeal}.${ext}`
+    const path = `${userId}/${selectedDate}/${activePhotoMeal}.${ext}`
     await supabase.storage.from('meal-photos').upload(path, file, { upsert: true })
-    const existing = await supabase.from('meal_photos').select('id').eq('user_id', userId).eq('log_date', today).eq('meal_type', activePhotoMeal).single()
+    const existing = await supabase.from('meal_photos').select('id').eq('user_id', userId).eq('log_date', selectedDate).eq('meal_type', activePhotoMeal).single()
     if (existing.data) {
       await supabase.from('meal_photos').update({ storage_path: path }).eq('id', existing.data.id)
     } else {
