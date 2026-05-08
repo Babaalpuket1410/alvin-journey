@@ -337,7 +337,7 @@ function SplitPlanner({ onClose }: { onClose: () => void }) {
     for (const [day, val] of Object.entries(split)) {
       await supabase.from('workout_splits').upsert({
         user_id: user.id, day_of_week: parseInt(day),
-        label: val.label, muscle_groups: val.muscle_groups,
+        label: val.label, muscle_groups: val.muscle_groups, notes: null,
       }, { onConflict: 'user_id,day_of_week' })
     }
     setSaving(false)
