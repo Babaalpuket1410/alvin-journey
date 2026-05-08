@@ -50,7 +50,7 @@ export default function LoginPage() {
           </div>
           <h1 className="text-2xl font-black tracking-tight">
             <span style={{ background: 'linear-gradient(90deg,#f97316,#eab308)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Alvin&apos;s
+              Your
             </span>{' '}Journey
           </h1>
           <p className="text-sm mt-1" style={{ color: '#64748b' }}>Your personal diet &amp; workout tracker</p>
@@ -85,7 +85,7 @@ export default function LoginPage() {
               <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                 className="w-full rounded-md px-3 py-2 text-sm font-semibold outline-none transition-all"
                 style={{ background: '#181818', border: '1px solid #222', color: '#f1f5f9' }}
-                placeholder="alvin.niode@gmail.com"
+                placeholder="your@email.com"
                 onFocus={e => { e.target.style.borderColor = '#f97316'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,.15)' }}
                 onBlur={e => { e.target.style.borderColor = '#222'; e.target.style.boxShadow = 'none' }} />
             </div>
