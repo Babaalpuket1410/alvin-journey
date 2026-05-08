@@ -10,6 +10,8 @@ const TABS = [
   { href: '/workout', label: 'Workout', icon: '💪' },
   { href: '/meals', label: 'Meals', icon: '🍽️' },
   { href: '/water', label: 'Water', icon: '💧' },
+  { href: '/steps', label: 'Steps', icon: '👟' },
+  { href: '/sleep', label: 'Sleep', icon: '😴' },
   { href: '/progress', label: 'Progress', icon: '📈' },
 ]
 

@@ -49,20 +49,22 @@ export default function WorkoutPage() {
   const [addOpen, setAddOpen] = useState(false)
   const [restTimer, setRestTimer] = useState<{ active: boolean; seconds: number }>({ active: false, seconds: 90 })
   const [addType, setAddType] = useState<'strength' | 'cardio'>('strength')
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [splitOpen, setSplitOpen] = useState(false)
   const [form, setForm] = useState({
     name: '', category: 'Chest', muscle_groups: ['Chest'] as string[],
     sets: '3', reps: '10', weight_kg: '0', rest_seconds: '90',
     duration_min: '30', distance_km: '', speed_kmh: '', incline_pct: '', intensity: 'Moderate',
   })
-  const today = new Date().toISOString().split('T')[0]
 
   useEffect(() => {
     async function load() {
+      setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      let { data: session } = await supabase.from('workout_sessions').select('id').eq('user_id', user.id).eq('session_date', today).single()
+      let { data: session } = await supabase.from('workout_sessions').select('id').eq('user_id', user.id).eq('session_date', selectedDate).single()
       if (!session) {
-        const { data: newSession } = await supabase.from('workout_sessions').insert({ user_id: user.id, session_date: today, notes: null }).select('id').single()
+        const { data: newSession } = await supabase.from('workout_sessions').insert({ user_id: user.id, session_date: selectedDate, notes: null }).select('id').single()
         session = newSession
       }
       if (session) {
@@ -73,7 +75,7 @@ export default function WorkoutPage() {
       setLoading(false)
     }
     load()
-  }, [today])
+  }, [selectedDate])
 
   async function addExercise() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -120,16 +122,25 @@ export default function WorkoutPage() {
     <div className="max-w-2xl mx-auto px-4 py-6">
       {restTimer.active && <RestTimer seconds={restTimer.seconds} onDone={() => setRestTimer(v => ({ ...v, active: false }))} />}
 
-      <div className="mb-6 flex items-center justify-between">
-        <div>
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
           <h1 className="text-2xl font-black">Workout</h1>
-          <p className="text-sm mt-0.5" style={{ color: '#64748b' }}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          <div className="flex gap-2">
+            <button onClick={() => setSplitOpen(true)}
+              className="px-3 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+              style={{ background: '#111', border: '1px solid #222', color: '#64748b' }}>
+              🗓️ Split
+            </button>
+            <button onClick={() => setAddOpen(true)}
+              className="px-4 py-2 rounded-xl text-sm font-black uppercase tracking-widest text-black"
+              style={{ background: 'linear-gradient(90deg,#f97316,#eab308)' }}>
+              + Add
+            </button>
+          </div>
         </div>
-        <button onClick={() => setAddOpen(true)}
-          className="px-4 py-2 rounded-xl text-sm font-black uppercase tracking-widest text-black"
-          style={{ background: 'linear-gradient(90deg,#f97316,#eab308)' }}>
-          + Add
-        </button>
+        <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
+          className="rounded-lg px-3 py-2 text-xs font-bold outline-none transition-all"
+          style={{ background: '#111', border: '1px solid #222', color: '#f1f5f9' }} />
       </div>
 
       {loading ? (
@@ -286,6 +297,88 @@ export default function WorkoutPage() {
           </div>
         </div>
       )}
+
+      {/* Weekly Split Planner Modal */}
+      {splitOpen && <SplitPlanner onClose={() => setSplitOpen(false)} />}
+    </div>
+  )
+}
+
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const SPLIT_OPTIONS = ['Rest', 'Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Push', 'Pull', 'Upper', 'Lower', 'Full Body', 'Cardio', 'Core', 'Custom']
+
+function SplitPlanner({ onClose }: { onClose: () => void }) {
+  const supabase = createClient()
+  const [split, setSplit] = useState<Record<number, { label: string; muscle_groups: string[] }>>(
+    Object.fromEntries(DAYS.map((_, i) => [i, { label: i === 0 || i === 6 ? 'Rest' : 'Push', muscle_groups: [] }]))
+  )
+  const [saving, setSaving] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase.from('workout_splits').select('*').eq('user_id', user.id)
+      if (data && data.length > 0) {
+        const map: Record<number, { label: string; muscle_groups: string[] }> = { ...split }
+        data.forEach(d => { map[d.day_of_week] = { label: d.label, muscle_groups: d.muscle_groups } })
+        setSplit(map)
+      }
+      setLoaded(true)
+    }
+    load()
+  }, [])
+
+  async function save() {
+    setSaving(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    for (const [day, val] of Object.entries(split)) {
+      await supabase.from('workout_splits').upsert({
+        user_id: user.id, day_of_week: parseInt(day),
+        label: val.label, muscle_groups: val.muscle_groups,
+      }, { onConflict: 'user_id,day_of_week' })
+    }
+    setSaving(false)
+    onClose()
+  }
+
+  const today = new Date().getDay()
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-4 sm:pb-0" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)' }}>
+      <div className="w-full max-w-lg rounded-2xl overflow-hidden" style={{ background: '#0f0f0f', border: '1px solid #222', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div className="sticky top-0 flex items-center justify-between px-5 py-4 border-b z-10" style={{ background: '#0f0f0f', borderColor: '#222' }}>
+          <div className="text-sm font-black uppercase tracking-widest" style={{ color: '#f97316' }}>🗓️ Weekly Split Planner</div>
+          <button onClick={onClose} style={{ color: '#64748b' }} className="text-lg font-bold">✕</button>
+        </div>
+        <div className="p-5 space-y-3">
+          {DAYS.map((day, i) => (
+            <div key={i} className="rounded-xl p-3 flex items-center gap-3"
+              style={{ background: i === today ? 'rgba(249,115,22,0.08)' : '#111', border: `1px solid ${i === today ? 'rgba(249,115,22,0.3)' : '#1a1a1a'}` }}>
+              <div className="w-10 text-center">
+                <div className="text-xs font-black uppercase tracking-widest" style={{ color: i === today ? '#f97316' : '#64748b' }}>{day}</div>
+                {i === today && <div className="text-[9px]" style={{ color: '#f97316' }}>today</div>}
+              </div>
+              <select value={split[i]?.label || 'Rest'}
+                onChange={e => setSplit(s => ({ ...s, [i]: { ...s[i], label: e.target.value } }))}
+                className="flex-1 rounded-lg px-3 py-2 text-sm font-bold outline-none bg-[#181818] border border-[#222] text-[#f1f5f9] focus:border-orange-500 transition-all">
+                {SPLIT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+              <div className="w-20 text-xs font-bold text-right" style={{ color: split[i]?.label === 'Rest' ? '#3f4a58' : '#22c55e' }}>
+                {split[i]?.label === 'Rest' ? '😴 Rest' : '💪 Train'}
+              </div>
+            </div>
+          ))}
+          <div className="flex gap-3 pt-2">
+            <button onClick={onClose} className="flex-1 py-3 rounded-xl text-sm font-black uppercase tracking-widest" style={{ background: '#111', border: '1px solid #222', color: '#64748b' }}>Cancel</button>
+            <button onClick={save} disabled={saving} className="flex-1 py-3 rounded-xl text-sm font-black uppercase tracking-widest text-black disabled:opacity-60" style={{ background: 'linear-gradient(90deg,#f97316,#eab308)' }}>
+              {saving ? 'Saving…' : 'Save Split'}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

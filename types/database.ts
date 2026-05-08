@@ -160,6 +160,54 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['calorie_logs']['Insert']>
         Relationships: []
       }
+      steps_logs: {
+        Row: {
+          id: string
+          user_id: string
+          log_date: string
+          steps: number
+          goal: number
+          distance_km: number | null
+          calories_burned: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['steps_logs']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['steps_logs']['Insert']>
+        Relationships: []
+      }
+      sleep_logs: {
+        Row: {
+          id: string
+          user_id: string
+          log_date: string
+          bedtime: string | null
+          wake_time: string | null
+          duration_hrs: number | null
+          quality: number | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['sleep_logs']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['sleep_logs']['Insert']>
+        Relationships: []
+      }
+      workout_splits: {
+        Row: {
+          id: string
+          user_id: string
+          day_of_week: number
+          label: string
+          muscle_groups: string[]
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['workout_splits']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['workout_splits']['Insert']>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

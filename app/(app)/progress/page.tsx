@@ -5,6 +5,64 @@ import type { Database } from '@/types/database'
 
 type BodyScan = Database['public']['Tables']['body_scans']['Row']
 
+function TrendChart({ data, valueKey, label, color, unit }: {
+  data: BodyScan[]; valueKey: keyof BodyScan; label: string; color: string; unit: string
+}) {
+  const vals = data.filter(d => d[valueKey] != null).slice().reverse()
+  if (vals.length < 2) return (
+    <div className="rounded-xl p-4 text-center" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
+      <div className="text-xs font-extrabold uppercase tracking-widest mb-1" style={{ color: '#64748b' }}>{label}</div>
+      <div className="text-xs" style={{ color: '#3f4a58' }}>Need 2+ scans to show trend</div>
+    </div>
+  )
+  const numbers = vals.map(v => Number(v[valueKey]))
+  const min = Math.min(...numbers)
+  const max = Math.max(...numbers)
+  const range = max - min || 1
+  const w = 300, h = 80, pad = 10
+  const points = numbers.map((v, i) => {
+    const x = pad + (i / (numbers.length - 1)) * (w - pad * 2)
+    const y = h - pad - ((v - min) / range) * (h - pad * 2)
+    return `${x},${y}`
+  })
+  const first = numbers[0], last = numbers[numbers.length - 1]
+  const diff = last - first
+  const diffColor = valueKey === 'weight_kg' || valueKey === 'body_fat_pct' ? (diff < 0 ? '#22c55e' : '#ef4444') : (diff > 0 ? '#22c55e' : '#ef4444')
+
+  return (
+    <div className="rounded-xl p-4 relative overflow-hidden" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
+      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg,${color},transparent)` }} />
+      <div className="flex justify-between items-center mb-3">
+        <div className="text-xs font-extrabold uppercase tracking-widest" style={{ color: '#64748b' }}>{label}</div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-black" style={{ color }}>{last}{unit}</span>
+          <span className="text-xs font-black px-1.5 py-0.5 rounded" style={{ background: `${diffColor}22`, color: diffColor }}>
+            {diff > 0 ? '+' : ''}{diff.toFixed(1)}{unit}
+          </span>
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: 80 }}>
+        <defs>
+          <linearGradient id={`grad-${valueKey}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polyline points={points.join(' ')} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {numbers.map((_, i) => {
+          const [x, y] = points[i].split(',').map(Number)
+          return <circle key={i} cx={x} cy={y} r="3" fill={color} />
+        })}
+      </svg>
+      <div className="flex justify-between text-[10px] mt-1" style={{ color: '#3f4a58' }}>
+        <span>{new Date(vals[0].scan_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+        <span>{vals.length} scans</span>
+        <span>{new Date(vals[vals.length-1].scan_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+      </div>
+    </div>
+  )
+}
+
 export default function ProgressPage() {
   const supabase = createClient()
   const [scans, setScans] = useState<BodyScan[]>([])
@@ -169,6 +227,19 @@ export default function ProgressPage() {
 
       {/* History */}
       <div>
+      {/* Trend Charts */}
+      {scans.length >= 2 && (
+        <div className="mb-6">
+          <div className="text-xs font-extrabold uppercase tracking-widest mb-3" style={{ color: '#64748b' }}>Trends</div>
+          <div className="space-y-3">
+            <TrendChart data={scans} valueKey="weight_kg" label="Weight" color="#f97316" unit="kg" />
+            <TrendChart data={scans} valueKey="body_fat_pct" label="Body Fat %" color="#6366f1" unit="%" />
+            <TrendChart data={scans} valueKey="muscle_kg" label="Muscle Mass" color="#22c55e" unit="kg" />
+            <TrendChart data={scans} valueKey="health_score" label="Health Score" color="#eab308" unit="" />
+          </div>
+        </div>
+      )}
+
         <div className="text-xs font-extrabold uppercase tracking-widest mb-3" style={{ color: '#64748b' }}>Scan History</div>
         {scans.length === 0 ? (
           <div className="rounded-xl p-8 text-center" style={{ background: '#111', border: '1px solid #1a1a1a' }}>

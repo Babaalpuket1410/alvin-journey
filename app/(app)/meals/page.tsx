@@ -28,7 +28,7 @@ export default function MealsPage() {
   const [uploading, setUploading] = useState<MealType | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const [activePhotoMeal, setActivePhotoMeal] = useState<MealType | null>(null)
-  const today = new Date().toISOString().split('T')[0]
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
 
   useEffect(() => {
     async function load() {
@@ -36,8 +36,8 @@ export default function MealsPage() {
       if (!user) return
       setUserId(user.id)
       const [{ data: mealData }, { data: photoData }] = await Promise.all([
-        supabase.from('meal_logs').select('*').eq('user_id', user.id).eq('log_date', today).order('created_at'),
-        supabase.from('meal_photos').select('*').eq('user_id', user.id).eq('log_date', today),
+        supabase.from('meal_logs').select('*').eq('user_id', user.id).eq('log_date', selectedDate).order('created_at'),
+        supabase.from('meal_photos').select('*').eq('user_id', user.id).eq('log_date', selectedDate),
       ])
       setLogs(mealData || [])
       if (photoData) {
@@ -50,12 +50,12 @@ export default function MealsPage() {
       }
     }
     load()
-  }, [today])
+  }, [selectedDate])
 
   async function addFood() {
     if (!userId || !adding) return
     const { data } = await supabase.from('meal_logs').insert({
-      user_id: userId, log_date: today, meal_type: adding,
+      user_id: userId, log_date: selectedDate, meal_type: adding,
       food_name: form.food_name || 'Unknown food',
       calories: parseInt(form.calories) || 0,
       protein_g: parseFloat(form.protein_g) || 0,
@@ -84,7 +84,7 @@ export default function MealsPage() {
     if (existing.data) {
       await supabase.from('meal_photos').update({ storage_path: path }).eq('id', existing.data.id)
     } else {
-      await supabase.from('meal_photos').insert({ user_id: userId, log_date: today, meal_type: activePhotoMeal, storage_path: path })
+      await supabase.from('meal_photos').insert({ user_id: userId, log_date: selectedDate, meal_type: activePhotoMeal, storage_path: path })
     }
     const { data } = supabase.storage.from('meal-photos').getPublicUrl(path)
     setPhotos(v => ({ ...v, [activePhotoMeal]: data.publicUrl }))
@@ -103,9 +103,14 @@ export default function MealsPage() {
     <div className="max-w-2xl mx-auto px-4 py-6">
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={uploadPhoto} />
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-black">Meals</h1>
-        <p className="text-sm mt-0.5" style={{ color: '#64748b' }}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-black">Meals</h1>
+          <p className="text-sm mt-0.5" style={{ color: '#64748b' }}>{new Date(selectedDate).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+        </div>
+        <input type="date" value={selectedDate} onChange={e => { setSelectedDate(e.target.value); setLogs([]); setPhotos({}) }}
+          className="rounded-lg px-3 py-2 text-xs font-bold outline-none transition-all"
+          style={{ background: '#111', border: '1px solid #222', color: '#f1f5f9' }} />
       </div>
 
       {/* Daily totals */}
