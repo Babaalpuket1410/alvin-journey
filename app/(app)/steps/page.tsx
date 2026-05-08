@@ -67,7 +67,7 @@ export default function StepsPage() {
     const newSteps = steps + n
     setSteps(newSteps)
     setForm(f => ({ ...f, steps: String(newSteps) }))
-    const payload = { user_id: userId, log_date: selectedDate, steps: newSteps, goal }
+    const payload = { user_id: userId, log_date: selectedDate, steps: newSteps, goal, distance_km: null, calories_burned: null }
     if (logId) {
       await supabase.from('steps_logs').update({ steps: newSteps }).eq('id', logId)
     } else {
