@@ -50,7 +50,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             style={{ background: 'linear-gradient(135deg,#f97316,#eab308)' }}>🔥</div>
           <span className="text-sm font-black tracking-tight hidden sm:block">
             <span style={{ background: 'linear-gradient(90deg,#f97316,#eab308)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              {user?.name?.split(' ')[0] || 'Alvin'}&apos;s
+              {user?.name?.split(' ')[0] || 'My'}&apos;s
             </span>{' '}Journey
           </span>
         </div>

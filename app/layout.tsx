@@ -5,7 +5,7 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: "Alvin's Journey — Diet & Workout Tracker",
+  title: "My Journey — Diet & Workout Tracker",
   description: 'Personal health, diet and workout tracking app',
 }
 
